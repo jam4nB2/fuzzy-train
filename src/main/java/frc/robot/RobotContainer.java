@@ -9,7 +9,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.subsystems.armsub_;
-import frc.robot.commands.setmmmode;
+import frc.robot.commands.toggleMM;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 
@@ -28,9 +28,15 @@ public class RobotContainer {
   public RobotContainer() {
       // Configure the trigger bindings
     configureBindings();
+    
+    double joystickL = -1.0 * _driver.getLeftY();
+		double joystickR = -1.0 * _driver.getRawAxis(5); 
+    if (Math.abs(joystickL) < 0.10) { joystickL = 0; } /* deadband 10% */
+		if (Math.abs(joystickR) < 0.10) { joystickR = 0; } /* deadband 10% */
     JoystickButton dc_rButton = new JoystickButton(_driver, XboxController.Button.kA.value);
+    
 
-    dc_rButton.onTrue(new setmmmode(m_targetPos, mArmsub_, _driver));
+     dc_rButton.onTrue(new toggleMM(m_targetPos, mArmsub_, _driver));
 
   }
 

@@ -10,14 +10,14 @@ import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.armsub_;
 
 
-public class setmmmode extends CommandBase {
+public class toggleMM extends CommandBase {
   private final armsub_ m_arm;
   private final XboxController _driver;
   private double m_targetPos;
  
 
   /** Creates a new ArmTest. */
-  public setmmmode(double targetPos, armsub_ armSubsystem, XboxController _drivecontroller) {
+  public toggleMM(double targetPos, armsub_ armSubsystem, XboxController _drivecontroller) {
     // Use addRequirements() here to declare subsystem dependencies.
     m_arm = armSubsystem; 
     _driver = _drivecontroller;
@@ -33,7 +33,6 @@ public class setmmmode extends CommandBase {
   @Override
   public void execute() {
     m_arm.motionMagicMode(m_targetPos, _driver);
-    m_arm.adjustSmoothing(0, 0, _driver);
 }
 
   // Called once the command ends or is interrupted.
