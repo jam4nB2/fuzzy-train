@@ -8,6 +8,8 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.TalonFXControlMode;
@@ -50,7 +52,6 @@ public class armsub_ extends SubsystemBase {
 
 
     public void configureOuter(){
-      /* Outer Arm Left */
       _outerArmLeft.configFactoryDefault();
     _outerArmLeft.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
     
@@ -76,7 +77,6 @@ public class armsub_ extends SubsystemBase {
  
     _outerArmLeft.setSelectedSensorPosition(0, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
 
-    /* Outer Arm Right */
     _outerArmRight.configFactoryDefault();
     _outerArmRight.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
     
@@ -101,33 +101,8 @@ public class armsub_ extends SubsystemBase {
     _outerArmRight.configMotionAcceleration(Constants.ArmProfile.MOTION_ACCEL, Constants.kTimeoutMs);
  
     _outerArmRight.setSelectedSensorPosition(0, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
-
-    /* Inner Arm Left */
-    _innerArmLeft.configFactoryDefault();
-    _outerArmLeft.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
-    
-    _outerArmLeft.configNeutralDeadband(0.04, Constants.kTimeoutMs); // .04 is default deadband
-    _outerArmLeft.setSensorPhase(false);
-    _outerArmLeft.setInverted(false);
-    _outerArmLeft.setStatusFramePeriod(StatusFrameEnhanced.Status_13_Base_PIDF0, 10, Constants.kTimeoutMs);
-    _outerArmLeft.setStatusFramePeriod(StatusFrameEnhanced.Status_10_MotionMagic, 10, Constants.kTimeoutMs);
-    
-    _outerArmLeft.configNominalOutputForward(0, Constants.kTimeoutMs);
-		_outerArmLeft.configNominalOutputReverse(0, Constants.kTimeoutMs);
-		_outerArmLeft.configPeakOutputForward(1, Constants.kTimeoutMs);
-		_outerArmLeft.configPeakOutputReverse(-1, Constants.kTimeoutMs);
- 
-    _outerArmLeft.selectProfileSlot(Constants.kSlotIdx, Constants.kPIDLoopIdx);
-    _outerArmLeft.config_kF(Constants.kSlotIdx, Constants.kGains.kF, Constants.kTimeoutMs);
-		_outerArmLeft.config_kP(Constants.kSlotIdx, Constants.kGains.kP, Constants.kTimeoutMs);
-		_outerArmLeft.config_kI(Constants.kSlotIdx, Constants.kGains.kI, Constants.kTimeoutMs);
-		_outerArmLeft.config_kD(Constants.kSlotIdx, Constants.kGains.kD, Constants.kTimeoutMs);
- 
-    _outerArmLeft.configMotionCruiseVelocity(Constants.ArmProfile.CRUISE_VEL, Constants.kTimeoutMs);
-    _outerArmLeft.configMotionAcceleration(Constants.ArmProfile.MOTION_ACCEL, Constants.kTimeoutMs);
- 
-    _outerArmLeft.setSelectedSensorPosition(0, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
     }
+      
 
     public void configureInner(){
       /* Inner Arm Left */
@@ -176,7 +151,7 @@ public class armsub_ extends SubsystemBase {
       _innerArmRight.config_kP(Constants.kSlotIdx, Constants.kGains.kP, Constants.kTimeoutMs);
       _innerArmRight.config_kI(Constants.kSlotIdx, Constants.kGains.kI, Constants.kTimeoutMs);
       _innerArmRight.config_kD(Constants.kSlotIdx, Constants.kGains.kD, Constants.kTimeoutMs);
-   
+     
       _innerArmRight.configMotionCruiseVelocity(Constants.ArmProfile.CRUISE_VEL, Constants.kTimeoutMs);
       _innerArmRight.configMotionAcceleration(Constants.ArmProfile.MOTION_ACCEL, Constants.kTimeoutMs);
    
@@ -184,7 +159,7 @@ public class armsub_ extends SubsystemBase {
     }
 
     //Set control mode to Magic Motion if A is pressed 
-  public void motionMagicMode(double targetPos, XboxController _driver){
+  public void setMagicMotionOuter(double targetPos, XboxController _driver){
     double leftY = -1.0 * _driver.getLeftY(); 
     double rightY = -1.0 * _driver.getRawAxis(5); 
 
@@ -200,6 +175,14 @@ public class armsub_ extends SubsystemBase {
     }
 }
 
+public void setMagicMotionInner(double targetPos, XboxController _driver){
+  double rightY = -1.0 * _driver.getRawAxis(5); 
+  if (_driver.getBButton()){
+      targetPos = rightY * 2048 * 10.0;
+
+      _innerArmLeft.set(TalonSRXControlMode.PercentOutput, targetPos, DemandType.ArbitraryFeedForward, rightY);
+  }
+}
 
 public void zeroSelectedFeedbackSensor(){
   _outerArmLeft.setSelectedSensorPosition(0);
@@ -208,7 +191,7 @@ public void zeroSelectedFeedbackSensor(){
 public void adjustSmoothing(int _smoothing, int _pov, XboxController _driver){
   int pov = _driver.getPOV();
   if (_pov == pov) {
-  
+
   }
     else if (_pov == 180) {
       _smoothing--;
@@ -216,13 +199,26 @@ public void adjustSmoothing(int _smoothing, int _pov, XboxController _driver){
           _smoothing = 0;
 
         _outerArmLeft.configMotionSCurveStrength(_smoothing);
-    }
+        _innerArmLeft.configMotionSCurveStrength(_smoothing);
 
+    }
+      else if (_pov == 0) { // D-Pad up
+        _smoothing++;
+        if (_smoothing > 8)
+      _smoothing = 8;
+    _outerArmLeft.configMotionSCurveStrength(_smoothing);
+    _innerArmLeft.configMotionSCurveStrength(_smoothing);
     _pov = pov;
+  }
 }
 
-public void AdjustinnerArm(){
+public void adjustOuterArm(){
   _outerArmLeft.set(TalonFXControlMode.MotionMagic, _driver);
+  adjustSmoothing(_smoothing, _pov, m_Controller);
+}
+
+public void adjustInnerArm(){
+  _innerArmLeft.set(TalonSRXControlMode.MotionMagic, _driver);
   adjustSmoothing(_smoothing, _pov, m_Controller);
 }
 
